@@ -1,0 +1,30 @@
+[package]
+name = "rusty-musicbot"
+version = "0.1.0"
+authors = ["Mintd <johnmax2468@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dotenv = "0.15.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1.22"
+tracing-futures = "0.2.4"
+tracing-subscriber = "0.2.15"
+url = "2.2.0"
+
+[dependencies.serenity]
+version = "0.10"
+default-features = false
+features = ["cache", "collector", "framework", "standard_framework", "voice", "native_tls_backend"]
+
+[dependencies.songbird]
+version = "0.1"
+default-features = false
+features = ["builtin-queue", "gateway", "driver", "serenity-native"]
+
+[dependencies.tokio]
+version = "1.0.0"
+features = ["macros", "process", "signal", "rt-multi-thread"]
