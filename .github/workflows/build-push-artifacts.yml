@@ -15,10 +15,10 @@ jobs:
 
       - uses: Swatinem/rust-cache@v1
 
-      - uses: orf/cargo-bloat-action@v1
+      - uses: actions-rs/cargo@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          bloat_args: --release
+          command: build
+          args: --release
 
       - uses: actions/upload-artifact@v2
         with:
