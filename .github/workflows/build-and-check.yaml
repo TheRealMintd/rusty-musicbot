@@ -11,11 +11,11 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
 
-name: Build Artifacts on Push
+name: Build Artifacts and Check on Push
 
 jobs:
   build:
-    name: build
+    name: Build Artifacts
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
@@ -36,3 +36,22 @@ jobs:
         with:
           name: rusty-musicbot
           path: target/release/rusty-musicbot
+
+  checks:
+    name: Check source
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          components: clippy
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v1
+
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: -- -D warnings
