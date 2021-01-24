@@ -1,0 +1,26 @@
+on: push
+name: Build Artifacts on Push
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v1
+
+      - uses: orf/cargo-bloat-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          bloat_args: --release
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: rusty-musicbot
+          path: target/release/rusty-musicbot
