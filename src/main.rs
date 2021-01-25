@@ -17,7 +17,9 @@ use songbird::serenity::SerenityInit;
 use tracing::{error, info};
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
-use commands::{about::*, help::*, pause::*, ping::*, play::*, queue::*, search::*, skip::*};
+use commands::{
+	about::*, help::*, pause::*, ping::*, play::*, queue::*, resume::*, search::*, skip::*,
+};
 
 struct Handler;
 
@@ -29,7 +31,7 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(about, pause, ping, play, queue, search, skip)]
+#[commands(about, pause, ping, play, queue, resume, search, skip)]
 struct General;
 
 #[tokio::main]
