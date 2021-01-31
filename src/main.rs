@@ -58,8 +58,13 @@ async fn main() {
 	};
 
 	let framework = StandardFramework::new()
-		.configure(|c| c.prefix("~").owners(owners).on_mention(Some(bot_id)))
-		// .before(before)
+		.configure(|c| {
+			if let Ok(prefix) = env::var("MUSICBOT_PREFIX") {
+				c.prefix(&prefix);
+			}
+
+			c.owners(owners).on_mention(Some(bot_id))
+		})
 		.group(&GENERAL_GROUP)
 		.help(&HELP);
 
