@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use serenity::{
 	model::{
@@ -93,4 +93,16 @@ pub(crate) async fn get_track(
 		}
 		.into(),
 	))
+}
+
+pub(crate) fn format_duration(duration: Duration) -> String {
+	let hours = duration.as_secs() / 60 / 60;
+	let minutes = duration.as_secs() / 60 % 60;
+	let seconds = duration.as_secs() % 60;
+
+	if hours != 0 {
+		format!("{}:{}:{}", hours, minutes, seconds)
+	} else {
+		format!("{}:{}", minutes, seconds)
+	}
 }

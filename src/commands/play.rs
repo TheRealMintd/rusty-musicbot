@@ -71,6 +71,11 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 					embed.push_quote_safe(title);
 				}
 
+				if let Some(duration) = track_handle.metadata().duration {
+					embed.push(" ");
+					embed.push_mono(format_duration(duration));
+				}
+
 				embed.push(" to queue at position ");
 				embed.push(queue_length);
 				embed.push(".");

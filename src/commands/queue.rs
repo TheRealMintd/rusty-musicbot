@@ -5,6 +5,8 @@ use serenity::{
 	utils::MessageBuilder,
 };
 
+use crate::utils::*;
+
 #[command]
 #[only_in(guilds)]
 #[num_args(0)]
@@ -28,11 +30,19 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
 				.for_each(|(index, metadata)| {
 					queue_message.push_mono(index + 1);
 					queue_message.push(" | ");
-					queue_message.push_line_safe(
+					queue_message.push_safe(
 						metadata
 							.title
 							.as_deref()
 							.unwrap_or("Title information not present"),
+					);
+					queue_message.push("  ");
+					queue_message.push_mono_line(
+						metadata
+							.duration
+							.map(format_duration)
+							.as_deref()
+							.unwrap_or("No info"),
 					);
 				});
 
