@@ -65,7 +65,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 				let mut embed = MessageBuilder::new();
 				embed.push("Added ");
 
-				if let Some(url) = track_handle.metadata().source_url.as_deref() {
+				if let Some(ref url) = track_handle.metadata().source_url {
 					embed.push_named_link_safe(title, url);
 				} else {
 					embed.push_quote_safe(title);
