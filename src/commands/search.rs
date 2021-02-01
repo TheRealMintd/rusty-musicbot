@@ -8,7 +8,7 @@ use serenity::{
 	client::Context,
 	framework::standard::{macros::command, Args, CommandResult},
 	model::channel::{Message, ReactionType},
-	utils::{EmbedMessageBuilding, MessageBuilder},
+	utils::MessageBuilder,
 };
 
 use tokio::process::Command;
@@ -177,17 +177,13 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 	info!("Track <{}> queued in guild {}", title, guild_id);
 	results_message
 		.edit(&ctx.http, |m| {
-			m.content("");
-			m.embed(|m| {
-				m.description(
-					MessageBuilder::new()
-						.push("Added ")
-						.push_named_link_safe(title, url)
-						.push(" to queue at position ")
-						.push(queue_length)
-						.push(".")
-						.build(),
-				)
+			m.content("").embed(|m| {
+				m.description(build_description(
+					title,
+					Some(url),
+					track_handle.metadata().duration,
+					queue_length,
+				))
 			})
 		})
 		.await?;

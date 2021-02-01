@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{fmt::Display, sync::Arc, time::Duration};
 
 use serenity::{
 	model::{
@@ -6,6 +6,7 @@ use serenity::{
 		id::{ChannelId, GuildId},
 	},
 	prelude::*,
+	utils::{EmbedMessageBuilding, MessageBuilder},
 };
 
 use songbird::{
@@ -105,6 +106,36 @@ pub(crate) fn format_duration(duration: Duration) -> String {
 	} else {
 		format!("{}:{:02}", minutes, seconds)
 	}
+}
+
+pub(crate) fn build_description<T, U>(
+	title: T,
+	url: Option<U>,
+	duration: Option<Duration>,
+	position: usize,
+) -> String
+where
+	T: AsRef<str> + Display,
+	U: AsRef<str> + Display,
+{
+	let mut embed = MessageBuilder::new();
+	embed.push("Added ");
+
+	if let Some(ref url) = url {
+		embed.push_named_link_safe(title, url);
+	} else {
+		embed.push_quote_safe(title);
+	}
+
+	if let Some(duration) = duration {
+		embed.push(" ").push_mono(format_duration(duration));
+	}
+
+	embed
+		.push(" to queue at position ")
+		.push(position)
+		.push(".")
+		.build()
 }
 
 #[cfg(test)]

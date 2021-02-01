@@ -2,7 +2,6 @@ use serenity::{
 	client::Context,
 	framework::standard::{macros::command, Args, CommandResult},
 	model::channel::Message,
-	utils::{EmbedMessageBuilding, MessageBuilder},
 };
 
 use tracing::{error, info};
@@ -62,25 +61,12 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 	msg.channel_id
 		.send_message(&ctx.http, |m| {
 			m.embed(|m| {
-				let mut embed = MessageBuilder::new();
-				embed.push("Added ");
-
-				if let Some(ref url) = track_handle.metadata().source_url {
-					embed.push_named_link_safe(title, url);
-				} else {
-					embed.push_quote_safe(title);
-				}
-
-				if let Some(duration) = track_handle.metadata().duration {
-					embed.push(" ");
-					embed.push_mono(format_duration(duration));
-				}
-
-				embed.push(" to queue at position ");
-				embed.push(queue_length);
-				embed.push(".");
-
-				m.description(embed)
+				m.description(build_description(
+					title,
+					track_handle.metadata().source_url.as_ref(),
+					track_handle.metadata().duration,
+					queue_length,
+				))
 			})
 		})
 		.await?;
