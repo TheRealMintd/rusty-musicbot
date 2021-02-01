@@ -31,7 +31,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 	// parse the string to see if it is a valid URL, if it is, try to download from it, otherwise search YouTube with the string
 	let message = args.message().trim();
 	let valid_url = Url::parse(message).is_err();
-	let (track_handle, queue_length) = match get_track(message, valid_url).await {
+	let (track_handle, position) = match get_track(message, valid_url).await {
 		Ok((track, track_handle)) => {
 			let handler_lock = match join_channel(ctx, guild_id, channel_id).await {
 				Ok(handler_lock) => handler_lock,
@@ -65,7 +65,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 					title,
 					track_handle.metadata().source_url.as_ref(),
 					track_handle.metadata().duration,
-					queue_length,
+					position,
 				))
 			})
 		})

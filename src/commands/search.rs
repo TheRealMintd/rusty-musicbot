@@ -146,7 +146,7 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		}
 	};
 
-	let (track_handle, queue_length) = match get_track(url, false).await {
+	let (track_handle, position) = match get_track(url, false).await {
 		Ok((track, track_handle)) => {
 			let handler_lock = match join_channel(ctx, guild_id, channel_id).await {
 				Ok(handler_lock) => handler_lock,
@@ -182,7 +182,7 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 					title,
 					Some(url),
 					track_handle.metadata().duration,
-					queue_length,
+					position,
 				))
 			})
 		})
