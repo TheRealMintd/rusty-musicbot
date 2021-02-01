@@ -87,14 +87,14 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 	let mut results_message = msg
 		.channel_id
 		.send_message(&ctx.http, |m| {
-			m.content("Here are the search results:");
-			m.embed(|e| {
+			m.content("Here are the search results:").embed(|e| {
 				let mut embed_message = MessageBuilder::new();
 
 				results.iter().enumerate().for_each(|(index, sr)| {
-					embed_message.push_mono(index + 1);
-					embed_message.push(" | ");
-					embed_message.push_line_safe(&sr.title);
+					embed_message
+						.push_mono(index + 1)
+						.push(" | ")
+						.push_line_safe(&sr.title);
 				});
 
 				e.description(embed_message)
