@@ -101,8 +101,22 @@ pub(crate) fn format_duration(duration: Duration) -> String {
 	let seconds = duration.as_secs() % 60;
 
 	if hours != 0 {
-		format!("{}:{}:{}", hours, minutes, seconds)
+		format!("{}:{:02}:{:02}", hours, minutes, seconds)
 	} else {
-		format!("{}:{}", minutes, seconds)
+		format!("{}:{:02}", minutes, seconds)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use std::time::Duration;
+
+	use super::format_duration;
+
+	#[test]
+	fn test_format_duration() {
+		assert_eq!(format_duration(Duration::from_secs(8)), "0:08");
+		assert_eq!(format_duration(Duration::from_secs(60)), "1:00");
+		assert_eq!(format_duration(Duration::from_secs(3600)), "1:00:00");
 	}
 }
