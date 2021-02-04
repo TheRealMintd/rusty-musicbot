@@ -28,6 +28,12 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		}
 	};
 
+	// present the user with a loading message
+	let mut result_message = msg
+		.channel_id
+		.say(&ctx.http, "Please wait, searching...")
+		.await?;
+
 	// parse the string to see if it is a valid URL, if it is, try to download from it, otherwise search YouTube with the string
 	let message = args.message().trim();
 	let valid_url = Url::parse(message).is_err();
@@ -36,8 +42,8 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 			let handler_lock = match join_channel(ctx, guild_id, channel_id).await {
 				Ok(handler_lock) => handler_lock,
 				Err(e) => {
-					msg.channel_id
-						.say(&ctx.http, "Error joining the channel.")
+					result_message
+						.edit(&ctx.http, |m| m.content("Error joining the channel."))
 						.await?;
 					error!("Cannot join channel: {:?}", e);
 					return Ok(());
@@ -48,8 +54,10 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 			(track_handle, handler.queue().len())
 		}
 		Err(e) => {
-			msg.channel_id
-				.say(&ctx.http, "Error occurred during video download.")
+			result_message
+				.edit(&ctx.http, |m| {
+					m.content("Error occurred during video download.")
+				})
 				.await?;
 			error!("Failed to download video file: {:?}", e);
 			return Ok(());
@@ -58,8 +66,9 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
 	let title = track_handle.get_title();
 	info!("Track <{}> queued in guild {}", title, guild_id);
-	msg.channel_id
-		.send_message(&ctx.http, |m| {
+	result_message
+		.edit(&ctx.http, |m| {
+			m.content("");
 			m.embed(|m| {
 				m.description(build_description(
 					title,

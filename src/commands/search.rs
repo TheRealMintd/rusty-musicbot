@@ -44,6 +44,11 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		}
 	};
 
+	let mut result_message = msg
+		.channel_id
+		.say(&ctx.http, "Please wait, searching...")
+		.await?;
+
 	let output = Command::new("youtube-dl")
 		.arg("-R")
 		.arg("infinite")
@@ -84,9 +89,8 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		return Ok(());
 	}
 
-	let mut results_message = msg
-		.channel_id
-		.send_message(&ctx.http, |m| {
+	result_message
+		.edit(&ctx.http, |m| {
 			m.content("Here are the search results:").embed(|e| {
 				let mut embed_message = MessageBuilder::new();
 
@@ -111,21 +115,25 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 	];
 
 	for emoji in numbers.iter().take(results.len()).cloned() {
-		results_message.react(&ctx.http, emoji).await?;
+		result_message.react(&ctx.http, emoji).await?;
 	}
 
 	let numbers_copy = numbers.clone();
 	let results_count = results.len();
 
 	// wait for the user to make a selection using a reaction
-	let reactions = results_message
+	let reactions = result_message
 		.await_reaction(&ctx)
 		.timeout(Duration::from_secs(60))
 		.author_id(msg.author.id)
 		.filter(move |reaction| numbers_copy[..results_count].contains(&reaction.as_ref().emoji))
 		.await;
 
-	results_message.delete_reactions(&ctx.http).await?;
+	result_message.delete_reactions(&ctx.http).await?;
+	result_message.suppress_embeds(&ctx.http).await?;
+	result_message
+		.edit(&ctx.http, |m| m.content("Please wait..."))
+		.await?;
 
 	let url = match reactions {
 		Some(reaction) => {
@@ -136,7 +144,7 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 			.url
 		}
 		None => {
-			results_message
+			result_message
 				.edit(&ctx.http, |m| {
 					m.content("One minute has passed with no selection.");
 					m.suppress_embeds(true)
@@ -163,7 +171,7 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 			(track_handle, handler.queue().len())
 		}
 		Err(e) => {
-			results_message
+			result_message
 				.edit(&ctx.http, |m| {
 					m.content("Error occurred during video download.")
 				})
@@ -175,7 +183,7 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
 	let title = track_handle.get_title();
 	info!("Track <{}> queued in guild {}", title, guild_id);
-	results_message
+	result_message
 		.edit(&ctx.http, |m| {
 			m.content("").embed(|m| {
 				m.description(build_description(
