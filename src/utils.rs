@@ -64,6 +64,7 @@ pub(crate) async fn join_channel(
 			match success {
 				Ok(_) => {
 					let mut handler = handler_lock.lock().await;
+					handler.deafen(true).await?;
 					handler.add_global_event(
 						Event::Track(songbird::TrackEvent::End),
 						TrackEnd {
