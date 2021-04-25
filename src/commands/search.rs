@@ -168,7 +168,7 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 			};
 			let mut handler = handler_lock.lock().await;
 			handler.enqueue(track);
-			(track_handle, handler.queue().len())
+			(track_handle, handler.queue().len() - 1)
 		}
 		Err(e) => {
 			result_message
