@@ -28,7 +28,11 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
 				.map(|t| t.metadata())
 				.enumerate()
 				.for_each(|(index, metadata)| {
-					queue_message.push_mono(index + 1);
+					if index == 0 {
+						queue_message.push_mono("Now Playing");
+					} else {
+						queue_message.push_mono(index);
+					}
 					queue_message.push(" | ");
 					queue_message.push_safe(
 						metadata
