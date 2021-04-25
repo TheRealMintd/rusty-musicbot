@@ -59,7 +59,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          script: echo $PASSWORD | sudo -S systemctl restart rusty-musicbot
+          script: echo $PASS | sudo -S systemctl restart rusty-musicbot
 
   checks:
     name: Check source
