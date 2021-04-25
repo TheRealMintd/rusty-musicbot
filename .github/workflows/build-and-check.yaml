@@ -4,6 +4,7 @@ on:
       - 'src/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
+      - .github/workflows/build-and-check.yaml
 
 name: Build Artifacts and Deploy
 
