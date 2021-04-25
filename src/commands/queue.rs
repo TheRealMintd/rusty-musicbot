@@ -2,7 +2,7 @@ use serenity::{
 	client::Context,
 	framework::standard::{macros::command, CommandResult},
 	model::channel::Message,
-	utils::MessageBuilder,
+	utils::{EmbedMessageBuilding, MessageBuilder},
 };
 
 use crate::utils::*;
@@ -25,7 +25,6 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
 				.queue()
 				.current_queue()
 				.iter()
-				.map(|t| t.metadata())
 				.enumerate()
 				.for_each(|(index, metadata)| {
 					if index == 0 {
@@ -34,15 +33,18 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
 						queue_message.push_mono(index);
 					}
 					queue_message.push(" | ");
-					queue_message.push_safe(
-						metadata
-							.title
-							.as_deref()
-							.unwrap_or("Title information not present"),
-					);
+
+					match metadata.metadata().source_url {
+						Some(ref url) => {
+							queue_message.push_named_link_safe(metadata.get_title(), url)
+						}
+						None => queue_message.push_mono_safe(metadata.get_title()),
+					};
+
 					queue_message.push("  ");
 					queue_message.push_mono_line(
 						metadata
+							.metadata()
 							.duration
 							.map(format_duration)
 							.as_deref()
@@ -50,7 +52,9 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
 					);
 				});
 
-			msg.channel_id.say(&ctx.http, queue_message).await?;
+			msg.channel_id
+				.send_message(&ctx.http, |m| m.embed(|e| e.description(queue_message)))
+				.await?;
 		}
 		None => {
 			msg.channel_id.say(&ctx.http, "Queue is empty.").await?;
