@@ -5,13 +5,7 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
 
-  pull_request:
-    paths:
-      - 'src/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-
-name: Build Artifacts and Check on Push
+name: Build Artifacts and Deploy
 
 jobs:
   build:
@@ -36,6 +30,35 @@ jobs:
         with:
           name: rusty-musicbot
           path: target/release/rusty-musicbot
+
+  deploy:
+    name: Deploy Artifacts
+    runs-on: ubuntu-18.04
+    needs: [build]
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: rusty-musicbot
+
+      - name: Upload Files
+        uses: appleboy/scp-action@v0.1.1
+        env:
+          PASSWORD: ${{ secrets.PASSWORD }}
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: rusty-musicbot
+          target: ${{ secrets.TARGET_PATH }}
+
+      - name: Run Release
+        uses: appleboy/ssh-action@v0.1.4
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: echo $PASSWORD | sudo -S systemctl restart rusty-musicbot
 
   checks:
     name: Check source
