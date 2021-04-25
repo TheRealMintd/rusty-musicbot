@@ -60,6 +60,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
+          envs: PASS,TARGET_PATH
           script: |
             chmod u+x $TARGET_PATH/rusty-musicbot
             echo $PASS | sudo -S systemctl restart rusty-musicbot
