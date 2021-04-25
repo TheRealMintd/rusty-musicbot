@@ -4,6 +4,7 @@ pub mod pause;
 pub mod ping;
 pub mod play;
 pub mod queue;
+pub mod repeat;
 pub mod resume;
 pub mod search;
 pub mod skip;
