@@ -55,11 +55,14 @@ jobs:
         uses: appleboy/ssh-action@v0.1.4
         env:
           PASS: ${{ secrets.PASSWORD }}
+          TARGET_PATH: ${{ secrets.TARGET_PATH }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          script: echo $PASS | sudo -S systemctl restart rusty-musicbot
+          script: |
+            chmod u+x $TARGET_PATH/rusty-musicbot
+            echo $PASS | sudo -S systemctl restart rusty-musicbot
 
   checks:
     name: Check source
