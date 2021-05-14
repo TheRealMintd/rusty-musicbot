@@ -19,7 +19,7 @@ use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 use commands::{
 	about::*, help::*, pause::*, ping::*, play::*, queue::*, repeat::*, resume::*, search::*,
-	skip::*,
+	skip::*, version::*,
 };
 
 struct Handler;
@@ -32,7 +32,7 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(about, pause, ping, play, queue, repeat, resume, search, skip)]
+#[commands(about, pause, ping, play, queue, repeat, resume, search, skip, version)]
 struct General;
 
 #[tokio::main]

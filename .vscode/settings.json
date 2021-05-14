@@ -1,7 +1,14 @@
 {
 	"cSpell.words": [
+		"Dicord",
+		"Musicbot",
+		"concat",
 		"dl's",
 		"dotenv",
+		"llvm",
+		"rustc",
+		"semver",
+		"vergen",
 		"youtube",
 		"ytdl",
 		"ytsearch"
