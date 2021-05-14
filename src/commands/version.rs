@@ -8,7 +8,7 @@ use tracing::error;
 
 // Dicord automatically changes the tabs to four spaces, so extra spaces are added to fix alignment
 const VERSION_TEXT: &str = concat!(
-	'`',
+	"```",
 	"Rusty Musicbot - ",
 	env!("VERGEN_GIT_SEMVER"),
 	"\n\nBuild Timestamp:\t ",
@@ -19,7 +19,7 @@ const VERSION_TEXT: &str = concat!(
 	env!("VERGEN_GIT_COMMIT_TIMESTAMP"),
 	"\n\nRust Version:\t\t",
 	env!("VERGEN_RUSTC_SEMVER"),
-	'`',
+	"```",
 );
 
 #[command]
