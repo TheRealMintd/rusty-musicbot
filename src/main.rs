@@ -64,7 +64,9 @@ async fn main() {
 				c.prefix(&prefix);
 			}
 
-			c.owners(owners).on_mention(Some(bot_id))
+			c.owners(owners)
+				.on_mention(Some(bot_id))
+				.case_insensitivity(true)
 		})
 		.group(&GENERAL_GROUP)
 		.help(&HELP);
