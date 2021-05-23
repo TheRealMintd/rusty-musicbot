@@ -130,9 +130,8 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		.await;
 
 	result_message.delete_reactions(&ctx.http).await?;
-	result_message.suppress_embeds(&ctx.http).await?;
 	result_message
-		.edit(&ctx.http, |m| m.content("Please wait..."))
+		.edit(&ctx.http, |m| m.embed(|e| e.description("Please wait...")))
 		.await?;
 
 	let url = match reactions {
