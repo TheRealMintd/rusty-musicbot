@@ -11,7 +11,7 @@ use serenity::{
 
 use songbird::{
 	error::JoinError,
-	input::{error::Result as SongbirdResult, Restartable},
+	input::{error::Result as SongbirdResult, Metadata, Restartable},
 	tracks::{create_player, Track, TrackHandle},
 	Call, Event,
 };
@@ -109,26 +109,20 @@ pub(crate) fn format_duration(duration: Duration) -> String {
 	}
 }
 
-pub(crate) fn build_description<T, U>(
-	title: T,
-	url: Option<U>,
-	duration: Option<Duration>,
-	position: usize,
-) -> String
+pub(crate) fn build_description<T>(title: T, metadata: &Metadata, position: usize) -> String
 where
 	T: AsRef<str> + Display,
-	U: AsRef<str> + Display,
 {
 	let mut embed = MessageBuilder::new();
 	embed.push("Added ");
 
-	if let Some(ref url) = url {
+	if let Some(ref url) = metadata.source_url {
 		embed.push_named_link_safe(title, url);
 	} else {
 		embed.push_quote_safe(title);
 	}
 
-	if let Some(duration) = duration {
+	if let Some(duration) = metadata.duration {
 		embed.push(" ").push_mono(format_duration(duration));
 	}
 

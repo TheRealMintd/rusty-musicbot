@@ -187,8 +187,7 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 			m.content("").embed(|m| {
 				m.description(build_description(
 					title,
-					Some(url),
-					track_handle.metadata().duration,
+					track_handle.metadata(),
 					position,
 				))
 			})

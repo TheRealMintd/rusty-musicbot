@@ -72,8 +72,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 			m.embed(|m| {
 				m.description(build_description(
 					title,
-					track_handle.metadata().source_url.as_ref(),
-					track_handle.metadata().duration,
+					track_handle.metadata(),
 					position,
 				))
 			})
