@@ -114,7 +114,7 @@ where
 	T: AsRef<str> + Display,
 {
 	let mut embed = MessageBuilder::new();
-	embed.push("Added ");
+	embed.push("Name: ");
 
 	if let Some(ref url) = metadata.source_url {
 		embed.push_named_link_safe(title, url);
@@ -123,11 +123,17 @@ where
 	}
 
 	if let Some(duration) = metadata.duration {
-		embed.push(" ").push_mono(format_duration(duration));
+		embed
+			.push("\nDuration: ")
+			.push_mono_line(format_duration(duration));
+	}
+
+	if let Some(ref uploader) = metadata.artist {
+		embed.push("Artist/Uploader: ").push_line_safe(uploader);
 	}
 
 	embed
-		.push(" to queue at position ")
+		.push("\nAdded to queue at position ")
 		.push(position)
 		.push(".")
 		.build()
