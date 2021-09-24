@@ -1,5 +1,6 @@
 use std::{borrow::Cow, convert::TryFrom, time::Duration};
 
+use once_cell::sync::Lazy;
 use serde::Deserialize;
 
 use serde_json::Deserializer;
@@ -7,6 +8,7 @@ use serde_json::Deserializer;
 use serenity::{
 	client::Context,
 	framework::standard::{macros::command, Args, CommandResult},
+	futures::future,
 	model::channel::{Message, ReactionType},
 	utils::MessageBuilder,
 };
@@ -16,6 +18,15 @@ use tokio::process::Command;
 use tracing::{error, info};
 
 use crate::utils::*;
+
+static NUMBER_REACTS: Lazy<[ReactionType; 4]> = Lazy::new(|| {
+	[
+		ReactionType::try_from("1️⃣").unwrap(),
+		ReactionType::try_from("2️⃣").unwrap(),
+		ReactionType::try_from("3️⃣").unwrap(),
+		ReactionType::try_from("4️⃣").unwrap(),
+	]
+});
 
 #[derive(Debug, Deserialize)]
 struct SearchResult<'a> {
@@ -107,26 +118,23 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		.await?;
 
 	// add reactions to the message
-	let numbers = [
-		ReactionType::try_from("1️⃣")?,
-		ReactionType::try_from("2️⃣")?,
-		ReactionType::try_from("3️⃣")?,
-		ReactionType::try_from("4️⃣")?,
-	];
-
-	for emoji in numbers.iter().take(results.len()).cloned() {
+	let results_count = results.len();
+	for emoji in NUMBER_REACTS.iter().take(results_count).cloned() {
 		result_message.react(&ctx.http, emoji).await?;
 	}
-
-	let numbers_copy = numbers.clone();
-	let results_count = results.len();
+	let reacts = NUMBER_REACTS
+		.iter()
+		.take(results_count)
+		.cloned()
+		.map(|emoji| result_message.react(&ctx.http, emoji));
+	future::join_all(reacts).await;
 
 	// wait for the user to make a selection using a reaction
 	let reactions = result_message
 		.await_reaction(&ctx)
 		.timeout(Duration::from_secs(60))
 		.author_id(msg.author.id)
-		.filter(move |reaction| numbers_copy[..results_count].contains(&reaction.as_ref().emoji))
+		.filter(move |reaction| NUMBER_REACTS[..results_count].contains(&reaction.as_ref().emoji))
 		.await;
 
 	result_message.delete_reactions(&ctx.http).await?;
@@ -136,7 +144,7 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
 	let url = match reactions {
 		Some(reaction) => {
-			&results[numbers
+			&results[NUMBER_REACTS
 				.iter()
 				.position(|number| number == &reaction.as_inner_ref().emoji)
 				.expect("Reacted to another reaction")]
