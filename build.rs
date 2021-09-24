@@ -1,4 +1,4 @@
-use vergen::{Config, ShaKind, vergen};
+use vergen::{vergen, Config, ShaKind};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let mut config = Config::default();

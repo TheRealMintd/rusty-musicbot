@@ -14,27 +14,35 @@ async fn skip(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		.expect("Songbird Voice Client placed in at initialisation.")
 		.clone();
 
-	let message = match manager.get(msg.guild(&ctx.cache).await.unwrap().id) {
-		Some(handler_lock) => {
-			let handler = handler_lock.lock().await;
-			let queue = handler.queue();
+	let message =
+		match manager.get(msg.guild(&ctx.cache).await.unwrap().id) {
+			Some(handler_lock) => {
+				let handler = handler_lock.lock().await;
+				let queue = handler.queue();
 
-			if args.is_empty() {
-				queue.skip()?;
-				"Skipped song".to_string()
-			} else {
-				args.parse::<usize>()
-					.map(|index| {
-						queue
-							.dequeue(index)
-							.map(|_| format!("Skipped track at position {} in queue.", index))
-							.unwrap_or(format!("No track at position {}.", index))
-					})
-					.unwrap_or_else(|_| "Parameter must be a number.".to_string())
+				if args.is_empty() {
+					queue.skip()?;
+					"Skipped song".to_string()
+				} else {
+					args.parse::<usize>()
+						.map(|index| {
+							queue
+								.dequeue(index)
+								.map(|_| {
+									format!("Skipped track at position {} in queue.", index)
+								})
+								.unwrap_or(format!(
+									"No track at position {}.",
+									index
+								))
+						})
+						.unwrap_or_else(|_| {
+							"Parameter must be a number.".to_string()
+						})
+				}
 			}
-		}
-		None => "Not playing in voice channel".to_string(),
-	};
+			None => "Not playing in voice channel".to_string(),
+		};
 
 	msg.channel_id.say(&ctx.http, message).await?;
 

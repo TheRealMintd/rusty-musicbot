@@ -18,8 +18,8 @@ use tracing::{error, info};
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 use commands::{
-	about::*, help::*, pause::*, ping::*, play::*, queue::*, repeat::*, resume::*, search::*,
-	skip::*, version::*,
+	about::*, help::*, pause::*, ping::*, play::*, queue::*, repeat::*,
+	resume::*, search::*, skip::*, version::*,
 };
 
 struct Handler;
@@ -32,7 +32,9 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(about, pause, ping, play, queue, repeat, resume, search, skip, version)]
+#[commands(
+	about, pause, ping, play, queue, repeat, resume, search, skip, version
+)]
 struct General;
 
 #[tokio::main]
@@ -43,9 +45,11 @@ async fn main() {
 		.with_env_filter(EnvFilter::from_default_env())
 		.finish();
 
-	tracing::subscriber::set_global_default(subscriber).expect("Failed to start logger.");
+	tracing::subscriber::set_global_default(subscriber)
+		.expect("Failed to start logger.");
 
-	let token = env::var("DISCORD_TOKEN").expect("Token environment variable not set");
+	let token =
+		env::var("DISCORD_TOKEN").expect("Token environment variable not set");
 	let http = Http::new_with_token(&token);
 
 	let (owners, bot_id) = match http.get_current_application_info().await {

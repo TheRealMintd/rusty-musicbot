@@ -21,12 +21,8 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
 		Some(handler_lock) => {
 			let mut queue_message = MessageBuilder::new();
 			let handler = handler_lock.lock().await;
-			handler
-				.queue()
-				.current_queue()
-				.iter()
-				.enumerate()
-				.for_each(|(index, metadata)| {
+			handler.queue().current_queue().iter().enumerate().for_each(
+				|(index, metadata)| {
 					if index == 0 {
 						queue_message.push_mono("Now Playing");
 					} else {
@@ -35,10 +31,11 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
 					queue_message.push(" | ");
 
 					match metadata.metadata().source_url {
-						Some(ref url) => {
-							queue_message.push_named_link_safe(metadata.get_title(), url)
+						Some(ref url) => queue_message
+							.push_named_link_safe(metadata.get_title(), url),
+						None => {
+							queue_message.push_mono_safe(metadata.get_title())
 						}
-						None => queue_message.push_mono_safe(metadata.get_title()),
 					};
 
 					queue_message.push("  ");
@@ -50,10 +47,13 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
 							.as_deref()
 							.unwrap_or("No info"),
 					);
-				});
+				},
+			);
 
 			msg.channel_id
-				.send_message(&ctx.http, |m| m.embed(|e| e.description(queue_message)))
+				.send_message(&ctx.http, |m| {
+					m.embed(|e| e.description(queue_message))
+				})
 				.await?;
 		}
 		None => {

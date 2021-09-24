@@ -36,7 +36,10 @@ async fn repeat(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 						match current_queue.last() {
 							Some(track) => {
 								track.loop_for(repeat_for)?;
-								get_success_message(track.get_title(), repeat_for)
+								get_success_message(
+									track.get_title(),
+									repeat_for,
+								)
 							}
 							None => "No song to repeat.".to_string(),
 						}
@@ -49,13 +52,17 @@ async fn repeat(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 						.parse::<usize>()
 						.map(|repeat_for| (track_number, repeat_for))
 				}) {
-					Ok((track_number, repeat_for)) => match queue.current_queue().get(track_number)
+					Ok((track_number, repeat_for)) => match queue
+						.current_queue()
+						.get(track_number)
 					{
 						Some(track) => {
 							track.loop_for(repeat_for)?;
 							get_success_message(track.get_title(), repeat_for)
 						}
-						None => "There is no track at that position".to_string(),
+						None => {
+							"There is no track at that position".to_string()
+						}
 					},
 					Err(_) => "Parameters must be integers".to_string(),
 				}

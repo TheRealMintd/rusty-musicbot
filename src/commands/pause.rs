@@ -23,7 +23,9 @@ async fn pause(ctx: &Context, msg: &Message) -> CommandResult {
 					msg.channel_id.say(&ctx.http, "Paused!").await?;
 				}
 				None => {
-					msg.channel_id.say(&ctx.http, "No tracks in queue.").await?;
+					msg.channel_id
+						.say(&ctx.http, "No tracks in queue.")
+						.await?;
 				}
 			}
 		}

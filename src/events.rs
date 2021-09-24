@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use serenity::{async_trait, model::id::GuildId};
 
-use songbird::{Event, EventContext, EventHandler as VoiceEventHandler, Songbird};
+use songbird::{
+	Event, EventContext, EventHandler as VoiceEventHandler, Songbird,
+};
 
 use tracing::error;
 
@@ -20,7 +22,10 @@ impl VoiceEventHandler for TrackEnd {
 
 			if queue_empty {
 				if let Err(e) = self.manager.remove(self.guild_id).await {
-					error!("Could not leave {}'s voice channel: {:?}", self.guild_id, e);
+					error!(
+						"Could not leave {}'s voice channel: {:?}",
+						self.guild_id, e
+					);
 				}
 			}
 		}

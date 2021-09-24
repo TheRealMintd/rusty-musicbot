@@ -59,7 +59,8 @@ pub(crate) async fn join_channel(
 	match manager.get(guild_id) {
 		Some(handler_lock) => Ok(handler_lock),
 		None => {
-			let (handler_lock, success) = manager.join(guild_id, channel_id).await;
+			let (handler_lock, success) =
+				manager.join(guild_id, channel_id).await;
 
 			match success {
 				Ok(_) => {
@@ -109,7 +110,11 @@ pub(crate) fn format_duration(duration: Duration) -> String {
 	}
 }
 
-pub(crate) fn build_description<T>(title: T, metadata: &Metadata, position: usize) -> String
+pub(crate) fn build_description<T>(
+	title: T,
+	metadata: &Metadata,
+	position: usize,
+) -> String
 where
 	T: AsRef<str> + Display,
 {

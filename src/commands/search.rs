@@ -134,7 +134,9 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		.await_reaction(&ctx)
 		.timeout(Duration::from_secs(60))
 		.author_id(msg.author.id)
-		.filter(move |reaction| NUMBER_REACTS[..results_count].contains(&reaction.as_ref().emoji))
+		.filter(move |reaction| {
+			NUMBER_REACTS[..results_count].contains(&reaction.as_ref().emoji)
+		})
 		.await;
 
 	result_message.delete_reactions(&ctx.http).await?;
@@ -163,16 +165,17 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
 	let (track_handle, position) = match get_track(url, false).await {
 		Ok((track, track_handle)) => {
-			let handler_lock = match join_channel(ctx, guild_id, channel_id).await {
-				Ok(handler_lock) => handler_lock,
-				Err(e) => {
-					msg.channel_id
-						.say(&ctx.http, "Error joining the channel.")
-						.await?;
-					error!("Cannot join channel: {:?}", e);
-					return Ok(());
-				}
-			};
+			let handler_lock =
+				match join_channel(ctx, guild_id, channel_id).await {
+					Ok(handler_lock) => handler_lock,
+					Err(e) => {
+						msg.channel_id
+							.say(&ctx.http, "Error joining the channel.")
+							.await?;
+						error!("Cannot join channel: {:?}", e);
+						return Ok(());
+					}
+				};
 			let mut handler = handler_lock.lock().await;
 			handler.enqueue(track);
 			(track_handle, handler.queue().len() - 1)
@@ -193,7 +196,11 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 	result_message
 		.edit(&ctx.http, |m| {
 			m.content("").embed(|m| {
-				m.description(build_description(title, track_handle.metadata(), position))
+				m.description(build_description(
+					title,
+					track_handle.metadata(),
+					position,
+				))
 			})
 		})
 		.await?;

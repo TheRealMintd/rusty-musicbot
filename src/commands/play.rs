@@ -34,21 +34,25 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		.say(&ctx.http, "Please wait, searching...")
 		.await?;
 
-	// parse the string to see if it is a valid URL, if it is, try to download from it, otherwise search YouTube with the string
+	// parse the string to see if it is a valid URL, if it is, try to download
+	// from it, otherwise search YouTube with the string
 	let message = args.message().trim();
 	let valid_url = Url::parse(message).is_err();
 	let (track_handle, position) = match get_track(message, valid_url).await {
 		Ok((track, track_handle)) => {
-			let handler_lock = match join_channel(ctx, guild_id, channel_id).await {
-				Ok(handler_lock) => handler_lock,
-				Err(e) => {
-					result_message
-						.edit(&ctx.http, |m| m.content("Error joining the channel."))
-						.await?;
-					error!("Cannot join channel: {:?}", e);
-					return Ok(());
-				}
-			};
+			let handler_lock =
+				match join_channel(ctx, guild_id, channel_id).await {
+					Ok(handler_lock) => handler_lock,
+					Err(e) => {
+						result_message
+							.edit(&ctx.http, |m| {
+								m.content("Error joining the channel.")
+							})
+							.await?;
+						error!("Cannot join channel: {:?}", e);
+						return Ok(());
+					}
+				};
 			let mut handler = handler_lock.lock().await;
 			handler.enqueue(track);
 			(track_handle, handler.queue().len() - 1)

@@ -3,7 +3,8 @@ use std::collections::HashSet;
 use serenity::{
 	client::Context,
 	framework::standard::{
-		help_commands::with_embeds, macros::help, Args, CommandGroup, CommandResult, HelpOptions,
+		help_commands::with_embeds, macros::help, Args, CommandGroup,
+		CommandResult, HelpOptions,
 	},
 	model::prelude::*,
 };
