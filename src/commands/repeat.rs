@@ -14,7 +14,8 @@ use crate::utils::ObtainTitle;
 #[min_args(1)]
 #[max_args(2)]
 #[aliases("loop")]
-/// Repeat the selected track, or the current track by the specified number of times
+#[usage("[track-position] number-of-loops")]
+/// Repeat the selected track, or the current track, by the specified number of times
 async fn repeat(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 	let manager = songbird::get(ctx)
 		.await
