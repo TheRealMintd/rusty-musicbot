@@ -13,6 +13,7 @@ use crate::utils::ObtainTitle;
 #[only_in(guilds)]
 #[min_args(1)]
 #[max_args(2)]
+#[aliases("loop")]
 /// Repeat the selected track, or the current track by the specified number of times
 async fn repeat(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 	let manager = songbird::get(ctx)
