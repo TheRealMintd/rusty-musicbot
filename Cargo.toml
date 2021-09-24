@@ -21,7 +21,14 @@ url = "2.2.2"
 [dependencies.serenity]
 version = "0.10.9"
 default-features = false
-features = ["cache", "collector", "framework", "standard_framework", "voice", "native_tls_backend"]
+features = [
+	"cache",
+	"collector",
+	"framework",
+	"standard_framework",
+	"voice",
+	"native_tls_backend",
+]
 
 [dependencies.songbird]
 version = "0.2.0"
