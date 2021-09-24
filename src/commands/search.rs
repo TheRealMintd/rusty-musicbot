@@ -193,11 +193,7 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 	result_message
 		.edit(&ctx.http, |m| {
 			m.content("").embed(|m| {
-				m.description(build_description(
-					title,
-					track_handle.metadata(),
-					position,
-				))
+				m.description(build_description(title, track_handle.metadata(), position))
 			})
 		})
 		.await?;
