@@ -2,7 +2,8 @@
 name = "rusty-musicbot"
 version = "0.1.0"
 authors = ["Mintd <johnmax2468@gmail.com>"]
-edition = "2018"
+edition = "2021"
+rust-version = "1.56"
 
 build = "build.rs"
 
