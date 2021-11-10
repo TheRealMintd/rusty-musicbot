@@ -12,6 +12,8 @@ jobs:
   build:
     name: Build Artifacts
     runs-on: ubuntu-18.04
+    env:
+      CC: gcc-10
     steps:
       - run: sudo apt-get install -y 'lld-10'
 
