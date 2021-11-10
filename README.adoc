@@ -1,0 +1,22 @@
+= Rusty Musicbot
+
+A Discord musicbot written in Rust.
+
+== Building
+
+This program requires a Rust compiler of at least 1.56.
+
+[source, sh]
+----
+$ cargo build --release
+----
+
+The resulting `rusty-musicbot` binary can then be found in the `target/release`
+directory.
+
+== Setup
+
+This bot uses environment variables for its configuration.
+The only required environment variable is `DISCORD_TOKEN`.
+All other environment variables are listed
+https://github.com/TheRealMintd/rusty-musicbot/wiki/Configuration[here].
