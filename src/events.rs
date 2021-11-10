@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
 use serenity::{async_trait, model::id::GuildId};
-
 use songbird::{
 	Event, EventContext, EventHandler as VoiceEventHandler, Songbird,
 };
-
 use tracing::error;
 
 pub(crate) struct TrackEnd {

@@ -11,9 +11,7 @@ use serenity::{
 	model::gateway::Ready,
 	prelude::*,
 };
-
 use songbird::serenity::SerenityInit;
-
 use tracing::{error, info};
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 

@@ -8,7 +8,6 @@ use serenity::{
 	prelude::*,
 	utils::{EmbedMessageBuilding, MessageBuilder},
 };
-
 use songbird::{
 	error::JoinError,
 	input::{error::Result as SongbirdResult, Metadata, Restartable},

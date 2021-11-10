@@ -3,9 +3,7 @@ use serenity::{
 	framework::standard::{macros::command, Args, CommandResult},
 	model::channel::Message,
 };
-
 use tracing::{error, info};
-
 use url::Url;
 
 use crate::utils::*;

@@ -3,7 +3,6 @@ use serenity::{
 	framework::standard::{macros::command, CommandResult},
 	model::channel::Message,
 };
-
 use tracing::error;
 
 // Dicord automatically changes the tabs to four spaces, so extra spaces are added to fix alignment

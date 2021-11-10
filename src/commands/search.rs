@@ -2,9 +2,7 @@ use std::{borrow::Cow, convert::TryFrom, time::Duration};
 
 use once_cell::sync::Lazy;
 use serde::Deserialize;
-
 use serde_json::Deserializer;
-
 use serenity::{
 	client::Context,
 	framework::standard::{macros::command, Args, CommandResult},
@@ -12,9 +10,7 @@ use serenity::{
 	model::channel::{Message, ReactionType},
 	utils::MessageBuilder,
 };
-
 use tokio::process::Command;
-
 use tracing::{error, info};
 
 use crate::utils::*;
