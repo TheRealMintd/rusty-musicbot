@@ -38,7 +38,7 @@ struct General;
 
 #[tokio::main]
 async fn main() {
-	dotenv::dotenv().expect("Failed to load .env file");
+	let _ = dotenv::dotenv();
 
 	let subscriber = FmtSubscriber::builder()
 		.with_env_filter(EnvFilter::from_default_env())
