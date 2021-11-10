@@ -12,11 +12,7 @@ jobs:
   build:
     name: Build Artifacts
     runs-on: ubuntu-18.04
-    env:
-      CC: gcc-10
     steps:
-      - run: sudo apt-get install -y 'lld-10'
-
       - uses: actions/checkout@v2
 
       - uses: actions-rs/toolchain@v1
