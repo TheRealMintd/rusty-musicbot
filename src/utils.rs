@@ -14,6 +14,7 @@ use songbird::{
 	tracks::{create_player, Track, TrackHandle},
 	Call, Event,
 };
+use url::Url;
 
 use crate::events::TrackEnd;
 
@@ -83,18 +84,26 @@ pub(crate) async fn join_channel(
 	}
 }
 
-pub(crate) async fn get_track(
-	url_or_search: &str,
-	search: bool,
-) -> SongbirdResult<(Track, TrackHandle)> {
-	Ok(create_player(
-		if search {
-			Restartable::ytdl_search(url_or_search, true).await?
-		} else {
-			Restartable::ytdl(url_or_search.to_string(), true).await?
-		}
-		.into(),
-	))
+pub(crate) enum PlayParameter<'a> {
+	MaybeUrl(&'a str),
+	Url(&'a str),
+}
+
+impl<'a> PlayParameter<'a> {
+	pub async fn get_tracks(self) -> SongbirdResult<Vec<(Track, TrackHandle)>> {
+		Ok(match self {
+			Self::MaybeUrl(search_term) if Url::parse(search_term).is_err() => {
+				vec![create_player(
+					Restartable::ytdl_search(search_term, true).await?.into(),
+				)]
+			}
+			Self::MaybeUrl(url) | Self::Url(url) => {
+				vec![create_player(
+					Restartable::ytdl(url.to_string(), true).await?.into(),
+				)]
+			}
+		})
+	}
 }
 
 pub(crate) fn format_duration(duration: Duration) -> String {

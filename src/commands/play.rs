@@ -4,7 +4,6 @@ use serenity::{
 	model::channel::Message,
 };
 use tracing::{error, info};
-use url::Url;
 
 use crate::utils::*;
 
@@ -35,9 +34,8 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 	// parse the string to see if it is a valid URL, if it is, try to download
 	// from it, otherwise search YouTube with the string
 	let message = args.message().trim();
-	let valid_url = Url::parse(message).is_err();
-	let (track_handle, position) = match get_track(message, valid_url).await {
-		Ok((track, track_handle)) => {
+	match PlayParameter::MaybeUrl(message).get_tracks().await {
+		Ok(mut tracks) => {
 			let handler_lock =
 				match join_channel(ctx, guild_id, channel_id).await {
 					Ok(handler_lock) => handler_lock,
@@ -51,9 +49,54 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 						return Ok(());
 					}
 				};
-			let mut handler = handler_lock.lock().await;
-			handler.enqueue(track);
-			(track_handle, handler.queue().len() - 1)
+			let num_tracks = tracks.len();
+
+			if num_tracks == 1 {
+				let (track, track_handle) = tracks.remove(0);
+				// let title = track_handle.get_title();
+				let position = {
+					let mut handler = handler_lock.lock().await;
+					handler.enqueue(track);
+					handler.queue().len() - 1
+				};
+
+				info!(
+					"Track <{}> queued in guild {}",
+					track_handle.get_title(),
+					guild_id
+				);
+				result_message
+					.edit(&ctx.http, |m| {
+						m.content("");
+						m.embed(|m| {
+							m.description(build_description(
+								track_handle.get_title(),
+								track_handle.metadata(),
+								position,
+							))
+						})
+					})
+					.await?;
+			} else {
+				{
+					let mut handler = handler_lock.lock().await;
+					tracks
+						.into_iter()
+						.for_each(|(track, _)| handler.enqueue(track));
+				}
+				info!("Playlist <{}> queued in guild {}", message, guild_id);
+				result_message
+					.edit(&ctx.http, |m| {
+						m.content("");
+						m.embed(|m| {
+							m.description(format!(
+								"Queued {} tracks",
+								num_tracks
+							))
+						})
+					})
+					.await?;
+			}
 		}
 		Err(e) => {
 			result_message
@@ -65,21 +108,6 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 			return Ok(());
 		}
 	};
-
-	let title = track_handle.get_title();
-	info!("Track <{}> queued in guild {}", title, guild_id);
-	result_message
-		.edit(&ctx.http, |m| {
-			m.content("");
-			m.embed(|m| {
-				m.description(build_description(
-					title,
-					track_handle.metadata(),
-					position,
-				))
-			})
-		})
-		.await?;
 
 	Ok(())
 }

@@ -159,7 +159,11 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		}
 	};
 
-	let (track_handle, position) = match get_track(url, false).await {
+	let (track_handle, position) = match PlayParameter::Url(url)
+		.get_tracks()
+		.await
+		.map(|mut vector| vector.remove(0))
+	{
 		Ok((track, track_handle)) => {
 			let handler_lock =
 				match join_channel(ctx, guild_id, channel_id).await {
