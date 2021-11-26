@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions-rs/cargo@v1
         env:
-          RUSTFLAGS: -C target-feature=+sse4,+avx2
+          RUSTFLAGS: -C target-feature=+sse3,+avx2
         with:
           command: build
           args: --release
