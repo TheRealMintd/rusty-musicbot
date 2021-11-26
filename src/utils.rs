@@ -2,6 +2,7 @@ use std::{fmt::Display, sync::Arc, time::Duration};
 
 use async_stream::try_stream;
 use futures_core::Stream;
+use futures_util::stream::{FuturesOrdered, StreamExt};
 use serde_json::Deserializer;
 use serenity::{
 	model::{
@@ -122,18 +123,20 @@ impl PlayParameter {
 								.output()
 								.await?;
 
-							for video in Deserializer::from_slice(&ytdl.stdout)
-											.into_iter::<serde_json::Value>() {
-								let url = video
-									.expect("youtube-dl returned invalid JSON")
-									.get("url")
-									.expect("youtube-dl JSON has no 'url' field")
-									.as_str()
-									.expect("youtube-dl JSON has wrong 'url' field type")
-									.to_string();
-								let result = create_player(
-									Restartable::ytdl(url, true).await?.into()
-								);
+							let mut songs = Deserializer::from_slice(&ytdl.stdout)
+								.into_iter::<serde_json::Value>()
+								.filter_map(|video| video.ok())
+								.map(|video| {
+									let url = video.get("url")
+										.expect("youtube-dl JSON has no 'url' field")
+										.as_str()
+										.expect("youtube-dl JSON has wrong 'url' field type")
+										.to_string();
+									Restartable::ytdl(url, true)
+								})
+								.collect::<FuturesOrdered<_>>();
+							while let Some(song) = songs.next().await {
+								let result = create_player(song?.into());
 								yield result;
 							}
 							info!("Took {:.2?} to process playlist", start_time.elapsed());

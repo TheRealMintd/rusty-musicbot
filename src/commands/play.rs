@@ -1,10 +1,10 @@
+use futures_util::StreamExt;
 use serenity::{
 	client::Context,
 	framework::standard::{macros::command, Args, CommandResult},
 	model::channel::Message,
 	utils::MessageBuilder,
 };
-use tokio_stream::StreamExt;
 use tracing::{error, info};
 
 use crate::utils::*;

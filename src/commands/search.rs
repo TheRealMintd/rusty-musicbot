@@ -1,5 +1,6 @@
 use std::{borrow::Cow, convert::TryFrom, time::Duration};
 
+use futures_util::StreamExt;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde_json::Deserializer;
@@ -11,7 +12,6 @@ use serenity::{
 	utils::MessageBuilder,
 };
 use tokio::process::Command;
-use tokio_stream::StreamExt;
 use tracing::{error, info};
 
 use crate::utils::*;
