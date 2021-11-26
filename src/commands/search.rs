@@ -11,6 +11,7 @@ use serenity::{
 	utils::MessageBuilder,
 };
 use tokio::process::Command;
+use tokio_stream::StreamExt;
 use tracing::{error, info};
 
 use crate::utils::*;
@@ -159,10 +160,12 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		}
 	};
 
-	let (track_handle, position) = match PlayParameter::Url(url)
-		.get_tracks()
+	let song_stream = PlayParameter::Url(url.to_string()).get_tracks();
+	tokio::pin!(song_stream);
+	let (track_handle, position) = match song_stream
+		.next()
 		.await
-		.map(|mut vector| vector.remove(0))
+		.expect("Track URL returned nothing")
 	{
 		Ok((track, track_handle)) => {
 			let handler_lock =

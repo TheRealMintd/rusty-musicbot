@@ -1,5 +1,8 @@
-use std::{fmt::Display, process::Stdio, sync::Arc, time::Duration};
+use std::{fmt::Display, sync::Arc, time::Duration};
 
+use async_stream::try_stream;
+use futures_core::Stream;
+use serde_json::Deserializer;
 use serenity::{
 	model::{
 		channel::Message,
@@ -14,11 +17,8 @@ use songbird::{
 	tracks::{create_player, Track, TrackHandle},
 	Call, Event,
 };
-use tokio::{
-	io::{AsyncBufReadExt, BufReader},
-	process::Command,
-};
-use tracing::error;
+use tokio::process::Command;
+use tracing::info;
 use url::Url;
 
 use crate::events::TrackEnd;
@@ -89,101 +89,73 @@ pub(crate) async fn join_channel(
 	}
 }
 
-pub(crate) enum PlayParameter<'a> {
-	MaybeUrl(&'a str),
-	Url(&'a str),
+pub(crate) enum PlayParameter {
+	MaybeUrl(String),
+	Url(String),
 }
 
-impl<'a> PlayParameter<'a> {
-	pub async fn get_tracks(self) -> SongbirdResult<Vec<(Track, TrackHandle)>> {
-		Ok(match self {
-			Self::MaybeUrl(search_term) => {
-				match Url::parse(search_term) {
-					// create players for each song in the playlist
-					Ok(url)
-						if url
+impl PlayParameter {
+	pub fn get_tracks(
+		self,
+	) -> impl Stream<Item = SongbirdResult<(Track, TrackHandle)>> {
+		try_stream! {
+			match self {
+				Self::Url(url) => {
+					let result = create_player(
+						Restartable::ytdl(url, true).await?.into()
+					);
+					yield result;
+				}
+				Self::MaybeUrl(potential_url) => {
+					match Url::parse(&potential_url) {
+						Ok(url) if url
 							.host_str()
-							.map(|host| {
-								["www.youtube.com", "youtube.com"]
-									.contains(&host)
-							})
+							.map(|host| ["www.youtube.com", "youtube.com"]
+								 .contains(&host))
 							.unwrap_or(false) && url
-							.query_pairs()
-							.any(|(key, _)| key == "list") =>
-					{
-						let mut ytdl = Command::new("youtube-dl")
-							.args(&["-j", "--flat-playlist"])
-							.arg(url.as_str())
-							.stdout(Stdio::piped())
-							.spawn()?;
-						let output = ytdl
-							.stdout
-							.take()
-							.expect("No stdout to take from ytdl child");
+								.query_pairs()
+								.any(|(key, _)| key == "list") => {
+							let start_time = std::time::Instant::now();
+							let ytdl = Command::new("youtube-dl")
+								.args(&["-j", "--flat-playlist"])
+								.arg(url.as_str())
+								.output()
+								.await?;
 
-						let mut reader = BufReader::new(output).lines();
-						let status =
-							tokio::spawn(async move { ytdl.wait().await });
-
-						let mut playlist_videos = Vec::new();
-						while let Some(video) = reader.next_line().await? {
-							let json =
-								serde_json::from_str::<serde_json::Value>(
-									&video,
-								)
-								.expect("youtube-dl returned invalid JSON");
-							let video_url = json
-								.get("url")
-								.expect("youtube-dl JSON has no 'url' field")
-								.as_str()
-								.expect("youtube-dl JSON has wrong 'url' field type");
-							playlist_videos.push(create_player(
-								Restartable::ytdl(video_url.to_string(), true)
+							for video in Deserializer::from_slice(&ytdl.stdout)
+											.into_iter::<serde_json::Value>() {
+								let url = video
+									.expect("youtube-dl returned invalid JSON")
+									.get("url")
+									.expect("youtube-dl JSON has no 'url' field")
+									.as_str()
+									.expect("youtube-dl JSON has wrong 'url' field type")
+									.to_string();
+								let result = create_player(
+									Restartable::ytdl(url, true).await?.into()
+								);
+								yield result;
+							}
+							info!("Took {:.2?} to process playlist", start_time.elapsed());
+						}
+						Ok(url) => {
+							let result = create_player(
+								Restartable::ytdl(url, true).await?.into()
+							);
+							yield result;
+						}
+						Err(_) => {
+							let result = create_player(
+								Restartable::ytdl_search(potential_url, true)
 									.await?
-									.into(),
-							));
+									.into()
+							);
+							yield result;
 						}
-
-						match status.await.unwrap() {
-							Ok(status) if !status.success() => {
-								match status.code() {
-									Some(code) => {
-										error!("youtube-dl process failed with exit code: {}", code)
-									}
-									None => {
-										error!("youtube-dl process killed by signal")
-									}
-								}
-							}
-							Err(e) => {
-								error!(
-									"Error occurred when running process: {}",
-									e
-								)
-							}
-							_ => {}
-						}
-
-						playlist_videos
-					}
-					Ok(url) => vec![create_player(
-						Restartable::ytdl(url, true).await?.into(),
-					)],
-					Err(_) => {
-						vec![create_player(
-							Restartable::ytdl_search(search_term, true)
-								.await?
-								.into(),
-						)]
 					}
 				}
 			}
-			Self::Url(url) => {
-				vec![create_player(
-					Restartable::ytdl(url.to_string(), true).await?.into(),
-				)]
-			}
-		})
+		}
 	}
 }
 
@@ -229,7 +201,6 @@ where
 	embed
 		.push("\nAdded to queue at position ")
 		.push(position)
-		.push(".")
 		.build()
 }
 
