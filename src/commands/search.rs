@@ -160,6 +160,7 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		}
 	};
 
+	let start_time = std::time::Instant::now();
 	let song_stream = PlayParameter::Url(url.to_string()).get_tracks();
 	tokio::pin!(song_stream);
 	let (track_handle, position) = match song_stream
@@ -193,17 +194,17 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 			return Ok(());
 		}
 	};
+	let elapsed = start_time.elapsed();
 
 	let title = track_handle.get_title();
 	info!("Track <{}> queued in guild {}", title, guild_id);
 	result_message
 		.edit(&ctx.http, |m| {
 			m.content("").embed(|m| {
-				m.description(build_description(
-					title,
-					track_handle.metadata(),
-					position,
-				))
+				m.description(
+					build_description(title, track_handle.metadata(), position)
+						.push(format!(" in {:.2?}", elapsed)),
+				)
 			})
 		})
 		.await?;

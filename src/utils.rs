@@ -19,7 +19,6 @@ use songbird::{
 	Call, Event,
 };
 use tokio::process::Command;
-use tracing::info;
 use url::Url;
 
 use crate::events::TrackEnd;
@@ -116,7 +115,6 @@ impl PlayParameter {
 							.unwrap_or(false) && url
 								.query_pairs()
 								.any(|(key, _)| key == "list") => {
-							let start_time = std::time::Instant::now();
 							let ytdl = Command::new("youtube-dl")
 								.args(&["-j", "--flat-playlist"])
 								.arg(url.as_str())
@@ -139,7 +137,6 @@ impl PlayParameter {
 								let result = create_player(song?.into());
 								yield result;
 							}
-							info!("Took {:.2?} to process playlist", start_time.elapsed());
 						}
 						Ok(url) => {
 							let result = create_player(
@@ -178,7 +175,7 @@ pub(crate) fn build_description<T>(
 	title: T,
 	metadata: &Metadata,
 	position: usize,
-) -> String
+) -> MessageBuilder
 where
 	T: AsRef<str> + Display,
 {
@@ -201,10 +198,8 @@ where
 		embed.push("Artist/Uploader: ").push_line_safe(uploader);
 	}
 
+	embed.push("\nAdded to queue at position ").push(position);
 	embed
-		.push("\nAdded to queue at position ")
-		.push(position)
-		.build()
 }
 
 #[cfg(test)]

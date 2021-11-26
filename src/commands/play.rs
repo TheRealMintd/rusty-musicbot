@@ -33,6 +33,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		.say(&ctx.http, "Please wait, searching...")
 		.await?;
 
+	let start_time = std::time::Instant::now();
 	let message = args.message().trim();
 	let song_stream = PlayParameter::MaybeUrl(message.to_string()).get_tracks();
 	tokio::pin!(song_stream);
@@ -92,6 +93,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 			}
 		}
 	}
+	let elapsed = start_time.elapsed();
 
 	if added_songs == 0 {
 		result_message
@@ -104,7 +106,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 				added_songs - 1
 			));
 		}
-
+		message_content.push(format!(" in {:.2?}", elapsed));
 		result_message
 			.edit(&ctx.http, |m| {
 				m.content(if error_occured {
