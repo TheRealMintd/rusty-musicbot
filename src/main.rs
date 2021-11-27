@@ -4,6 +4,7 @@ mod utils;
 
 use std::{collections::HashSet, env};
 
+use once_cell::sync::Lazy;
 use serenity::{
 	async_trait,
 	framework::{standard::macros::group, StandardFramework},
@@ -19,6 +20,13 @@ use commands::{
 	about::*, help::*, pause::*, ping::*, play::*, queue::*, repeat::*,
 	resume::*, search::*, skip::*, stop::*, version::*,
 };
+
+static QUEUE_CHUNK_SIZE: Lazy<usize> = Lazy::new(|| {
+	env::var("RUSTY_QUEUE_CHUNK_SIZE")
+		.ok()
+		.and_then(|size| size.parse().ok())
+		.unwrap_or(20)
+});
 
 struct Handler;
 

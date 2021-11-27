@@ -23,6 +23,7 @@ use tokio::process::Command;
 use url::Url;
 
 use crate::events::TrackEnd;
+use crate::QUEUE_CHUNK_SIZE;
 
 pub(crate) trait ObtainTitle {
 	fn get_title(&self) -> &str;
@@ -134,7 +135,7 @@ impl PlayParameter {
 											.to_string();
 										Restartable::ytdl(url, true)
 									})
-									.chunks(20)
+									.chunks(*QUEUE_CHUNK_SIZE)
 									.into_iter()
 									.map(|chunk| chunk.collect::<FuturesOrdered<_>>())
 									.collect::<Vec<_>>();
