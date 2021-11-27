@@ -3,6 +3,7 @@ use std::{fmt::Display, sync::Arc, time::Duration};
 use async_stream::try_stream;
 use futures_core::Stream;
 use futures_util::stream::{FuturesOrdered, StreamExt};
+use itertools::Itertools;
 use serde_json::Deserializer;
 use serenity::{
 	model::{
@@ -121,21 +122,27 @@ impl PlayParameter {
 								.output()
 								.await?;
 
-							let mut songs = Deserializer::from_slice(&ytdl.stdout)
-								.into_iter::<serde_json::Value>()
-								.filter_map(|video| video.ok())
-								.map(|video| {
-									let url = video.get("url")
-										.expect("youtube-dl JSON has no 'url' field")
-										.as_str()
-										.expect("youtube-dl JSON has wrong 'url' field type")
-										.to_string();
-									Restartable::ytdl(url, true)
-								})
-								.collect::<FuturesOrdered<_>>();
-							while let Some(song) = songs.next().await {
-								let result = create_player(song?.into());
-								yield result;
+							let songs: Vec<FuturesOrdered<_>> =
+								Deserializer::from_slice(&ytdl.stdout)
+									.into_iter::<serde_json::Value>()
+									.filter_map(|video| video.ok())
+									.map(|video| {
+										let url = video.get("url")
+											.expect("youtube-dl JSON has no 'url' field")
+											.as_str()
+											.expect("youtube-dl JSON has wrong 'url' field type")
+											.to_string();
+										Restartable::ytdl(url, true)
+									})
+									.chunks(20)
+									.into_iter()
+									.map(|chunk| chunk.collect::<FuturesOrdered<_>>())
+									.collect::<Vec<_>>();
+							for mut song_chunk in songs {
+								while let Some(song) = song_chunk.next().await {
+									let result = create_player(song?.into());
+									yield result;
+								}
 							}
 						}
 						Ok(url) => {
