@@ -28,7 +28,8 @@ async fn skip(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 						.map(|index| {
 							queue
 								.dequeue(index)
-								.map(|_| {
+								.map(|track| {
+									track.stop().unwrap();
 									format!("Skipped track at position {} in queue.", index)
 								})
 								.unwrap_or(format!(
@@ -37,7 +38,7 @@ async fn skip(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 								))
 						})
 						.unwrap_or_else(|_| {
-							"Parameter must be a number.".to_string()
+							"Parameter must be a positive number.".to_string()
 						})
 				}
 			}
