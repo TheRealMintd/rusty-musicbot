@@ -21,20 +21,24 @@ async fn shuffle(ctx: &Context, msg: &Message) -> CommandResult {
 		Some(handler_lock) => {
 			let handler = handler_lock.lock().await;
 
-			if handler.queue().len() > 1 {
-				handler.queue().pause()?;
-				handler.queue().modify_queue::<_, TrackResult<_>>(|queue| {
-					queue[0].seek_time(Duration::from_secs(0))?;
-					let mut rng = SmallRng::from_entropy();
-					queue.make_contiguous().shuffle(&mut rng);
-					Ok(())
-				})?;
-				handler.queue().resume()?;
-				"Queue shuffled!"
-			} else if handler.queue().len() == 1 {
-				"Cannot shuffle queue with only one song"
-			} else {
-				"Cannot shuffle empty queue"
+			match handler.queue().len().cmp(&1) {
+				std::cmp::Ordering::Less => "Cannot shuffle empty queue",
+				std::cmp::Ordering::Equal => {
+					"Cannot shuffle queue with only one song"
+				}
+				std::cmp::Ordering::Greater => {
+					handler.queue().pause()?;
+					handler.queue().modify_queue::<_, TrackResult<_>>(
+						|queue| {
+							queue[0].seek_time(Duration::from_secs(0))?;
+							let mut rng = SmallRng::from_entropy();
+							queue.make_contiguous().shuffle(&mut rng);
+							Ok(())
+						},
+					)?;
+					handler.queue().resume()?;
+					"Queue shuffled!"
+				}
 			}
 		}
 		None => "Not playing in voice channel",
