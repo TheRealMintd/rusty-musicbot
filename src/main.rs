@@ -18,7 +18,7 @@ use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 use commands::{
 	about::*, help::*, pause::*, ping::*, play::*, queue::*, repeat::*,
-	resume::*, search::*, skip::*, stop::*, version::*,
+	resume::*, search::*, shuffle::*, skip::*, stop::*, version::*,
 };
 
 static QUEUE_CHUNK_SIZE: Lazy<usize> = Lazy::new(|| {
@@ -39,8 +39,8 @@ impl EventHandler for Handler {
 
 #[group]
 #[commands(
-	about, pause, ping, play, queue, repeat, resume, search, skip, stop,
-	version
+	about, pause, ping, play, queue, repeat, resume, search, shuffle, skip,
+	stop, version
 )]
 struct General;
 

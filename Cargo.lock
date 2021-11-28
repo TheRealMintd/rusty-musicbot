@@ -1379,6 +1379,7 @@ dependencies = [
  "futures-util",
  "itertools",
  "once_cell",
+ "rand 0.8.4",
  "serde",
  "serde_json",
  "serenity",
