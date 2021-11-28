@@ -6,6 +6,7 @@ use serenity::{
 	model::channel::Message,
 	{client::Context, framework::standard::macros::command},
 };
+use songbird::tracks::TrackResult;
 
 #[command]
 #[description = "Shuffles the current queue"]
@@ -21,13 +22,14 @@ async fn shuffle(ctx: &Context, msg: &Message) -> CommandResult {
 			let handler = handler_lock.lock().await;
 
 			if handler.queue().len() > 1 {
-				handler.queue().pause();
-				handler.queue().modify_queue(|queue| {
-					queue[0].seek_time(Duration::from_secs(0));
+				handler.queue().pause()?;
+				handler.queue().modify_queue::<_, TrackResult<_>>(|queue| {
+					queue[0].seek_time(Duration::from_secs(0))?;
 					let mut rng = SmallRng::from_entropy();
 					queue.make_contiguous().shuffle(&mut rng);
-				});
-				handler.queue().resume();
+					Ok(())
+				})?;
+				handler.queue().resume()?;
 				msg.channel_id.say(&ctx.http, "Queue shuffled!").await?;
 			} else if handler.queue().len() == 1 {
 				msg.channel_id
