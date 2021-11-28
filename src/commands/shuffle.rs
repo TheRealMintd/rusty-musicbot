@@ -17,7 +17,7 @@ async fn shuffle(ctx: &Context, msg: &Message) -> CommandResult {
 		.expect("Songbird Voice Client placed in at initialisation.")
 		.clone();
 
-	match manager.get(msg.guild(&ctx.cache).await.unwrap().id) {
+	let message = match manager.get(msg.guild(&ctx.cache).await.unwrap().id) {
 		Some(handler_lock) => {
 			let handler = handler_lock.lock().await;
 
@@ -30,23 +30,17 @@ async fn shuffle(ctx: &Context, msg: &Message) -> CommandResult {
 					Ok(())
 				})?;
 				handler.queue().resume()?;
-				msg.channel_id.say(&ctx.http, "Queue shuffled!").await?;
+				"Queue shuffled!"
 			} else if handler.queue().len() == 1 {
-				msg.channel_id
-					.say(&ctx.http, "Cannot shuffle queue with only one song")
-					.await?;
+				"Cannot shuffle queue with only one song"
 			} else {
-				msg.channel_id
-					.say(&ctx.http, "Cannot shuffle empty queue")
-					.await?;
+				"Cannot shuffle empty queue"
 			}
 		}
-		None => {
-			msg.channel_id
-				.say(&ctx.http, "Not playing in voice channel")
-				.await?;
-		}
-	}
+		None => "Not playing in voice channel",
+	};
+
+	msg.channel_id.say(&ctx.http, message).await?;
 
 	Ok(())
 }
