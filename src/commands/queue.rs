@@ -51,9 +51,8 @@ pub(crate) fn build_queue_message(queue: &[TrackHandle]) -> MessageBuilder {
 		queue_message.push(" | ");
 
 		match metadata.metadata().source_url {
-			Some(ref url) => {
-				queue_message.push_named_link_safe(metadata.get_title(), url)
-			}
+			Some(ref url) => queue_message
+				.push_named_link(escape_markdown(metadata.get_title()), url),
 			None => queue_message.push_mono_safe(metadata.get_title()),
 		};
 

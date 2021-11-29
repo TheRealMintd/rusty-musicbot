@@ -1380,6 +1380,7 @@ dependencies = [
  "itertools",
  "once_cell",
  "rand 0.8.4",
+ "regex",
  "serde",
  "serde_json",
  "serenity",

@@ -1,9 +1,11 @@
-use std::{fmt::Display, sync::Arc, time::Duration};
+use std::{borrow::Cow, fmt::Display, sync::Arc, time::Duration};
 
 use async_stream::try_stream;
 use futures_core::Stream;
 use futures_util::stream::{FuturesOrdered, StreamExt};
 use itertools::Itertools;
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serde_json::Deserializer;
 use serenity::{
 	model::{
@@ -179,6 +181,12 @@ pub(crate) fn format_duration(duration: Duration) -> String {
 	}
 }
 
+pub(crate) fn escape_markdown<'a>(text: &'a str) -> Cow<'a, str> {
+	static REGEX: Lazy<Regex> =
+		Lazy::new(|| Regex::new(r"([*_`~\\\[\]])").unwrap());
+	REGEX.replace_all(text, r"\$1")
+}
+
 pub(crate) fn build_description<T>(
 	title: T,
 	metadata: &Metadata,
@@ -191,7 +199,7 @@ where
 	embed.push("Name: ");
 
 	if let Some(ref url) = metadata.source_url {
-		embed.push_named_link_safe(title, url);
+		embed.push_named_link(escape_markdown(title.as_ref()), url);
 	} else {
 		embed.push_quote_safe(title);
 	}
