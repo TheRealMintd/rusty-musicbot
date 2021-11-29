@@ -181,7 +181,7 @@ pub(crate) fn format_duration(duration: Duration) -> String {
 	}
 }
 
-pub(crate) fn escape_markdown<'a>(text: &'a str) -> Cow<'a, str> {
+pub(crate) fn escape_markdown(text: &str) -> Cow<str> {
 	static REGEX: Lazy<Regex> =
 		Lazy::new(|| Regex::new(r"([*_`~\\\[\]])").unwrap());
 	REGEX.replace_all(text, r"\$1")
