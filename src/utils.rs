@@ -114,7 +114,7 @@ impl PlayParameter {
 					match Url::parse(&potential_url) {
 						Ok(url) if url
 							.host_str()
-							.map(|host| ["www.youtube.com", "youtube.com"]
+							.map(|host| ["youtube.com", "music.youtube.com", "www.youtube.com"]
 								 .contains(&host))
 							.unwrap_or(false) && url
 								.query_pairs()
