@@ -125,7 +125,7 @@ impl PlayParameter {
 								.output()
 								.await?;
 
-							let songs: Vec<FuturesOrdered<_>> =
+							let mut song_iter =
 								Deserializer::from_slice(&ytdl.stdout)
 									.into_iter::<serde_json::Value>()
 									.filter_map(|video| video.ok())
@@ -136,16 +136,26 @@ impl PlayParameter {
 											.expect("youtube-dl JSON has wrong 'url' field type")
 											.to_string();
 										Restartable::ytdl(url, true)
-									})
-									.chunks(*QUEUE_CHUNK_SIZE)
-									.into_iter()
-									.map(|chunk| chunk.collect::<FuturesOrdered<_>>())
-									.collect::<Vec<_>>();
-							for mut song_chunk in songs {
-								while let Some(song) = song_chunk.next().await {
-									let result = create_player(song?.into());
+									});
+
+							match song_iter.next() {
+								Some(song) => {
+									let result = create_player(song.await?.into());
 									yield result;
-								}
+
+									let songs = song_iter.chunks(*QUEUE_CHUNK_SIZE)
+										.into_iter()
+										.map(|chunk| chunk.collect::<FuturesOrdered<_>>())
+										.collect::<Vec<_>>();
+
+									for mut song_chunk in songs {
+										while let Some(song) = song_chunk.next().await {
+											let result = create_player(song?.into());
+											yield result;
+										}
+									}
+								},
+								None => {}
 							}
 						}
 						Ok(url) => {
