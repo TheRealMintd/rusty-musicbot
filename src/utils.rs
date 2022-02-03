@@ -1,6 +1,6 @@
 use std::{borrow::Cow, fmt::Display, sync::Arc, time::Duration};
 
-use async_stream::try_stream;
+use async_stream::{stream, try_stream};
 use futures_core::Stream;
 use futures_util::stream::{FuturesOrdered, StreamExt};
 use itertools::Itertools;
@@ -99,81 +99,89 @@ pub(crate) enum PlayParameter {
 }
 
 impl PlayParameter {
-	pub fn get_tracks(
+	pub(crate) fn get_tracks(
 		self,
 	) -> impl Stream<Item = SongbirdResult<(Track, TrackHandle)>> {
-		try_stream! {
+		stream! {
 			match self {
 				Self::Url(url) => {
-					let result = create_player(
-						Restartable::ytdl(url, true).await?.into()
-					);
-					yield result;
+					yield Restartable::ytdl(url, true)
+						.await
+						.map(|song| create_player(song.into()));
 				}
-				Self::MaybeUrl(potential_url) => {
-					match Url::parse(&potential_url) {
-						Ok(url) if url
-							.host_str()
-							.map(|host| ["youtube.com", "music.youtube.com", "www.youtube.com"]
-								 .contains(&host))
-							.unwrap_or(false) && url
-								.query_pairs()
-								.any(|(key, _)| key == "list") => {
-							let ytdl = Command::new("youtube-dl")
-								.args(&["-j", "--flat-playlist"])
-								.arg(url.as_str())
-								.output()
-								.await?;
-
-							let mut song_iter =
-								Deserializer::from_slice(&ytdl.stdout)
-									.into_iter::<serde_json::Value>()
-									.filter_map(|video| video.ok())
-									.map(|video| {
-										let url = video.get("url")
-											.expect("youtube-dl JSON has no 'url' field")
-											.as_str()
-											.expect("youtube-dl JSON has wrong 'url' field type")
-											.to_string();
-										Restartable::ytdl(url, true)
-									});
-
-							match song_iter.next() {
-								Some(song) => {
-									let result = create_player(song.await?.into());
-									yield result;
-
-									let songs = song_iter.chunks(*QUEUE_CHUNK_SIZE)
-										.into_iter()
-										.map(|chunk| chunk.collect::<FuturesOrdered<_>>())
-										.collect::<Vec<_>>();
-
-									for mut song_chunk in songs {
-										while let Some(song) = song_chunk.next().await {
-											let result = create_player(song?.into());
-											yield result;
-										}
-									}
-								},
-								None => {}
-							}
-						}
-						Ok(url) => {
-							let result = create_player(
-								Restartable::ytdl(url, true).await?.into()
-							);
-							yield result;
-						}
-						Err(_) => {
-							let result = create_player(
-								Restartable::ytdl_search(potential_url, true)
-									.await?
-									.into()
-							);
+				Self::MaybeUrl(potential_url) => match Url::parse(&potential_url) {
+					Ok(url) => {
+						for await result in Self::handle_url(url) {
 							yield result;
 						}
 					}
+					Err(_) => {
+						yield Restartable::ytdl_search(potential_url, true)
+							.await
+							.map(|song| create_player(song.into()));
+					}
+				},
+			}
+		}
+	}
+
+	fn handle_url(
+		url: Url,
+	) -> impl Stream<Item = SongbirdResult<(Track, TrackHandle)>> {
+		const KNOWN_PLAYLIST_HOSTS: [&str; 3] =
+			["youtube.com", "music.youtube.com", "www.youtube.com"];
+
+		let is_playlist = url
+			.host_str()
+			.map(|host| KNOWN_PLAYLIST_HOSTS.contains(&host))
+			.unwrap_or(false)
+			&& url.query_pairs().any(|(key, _)| key == "list");
+
+		try_stream! {
+			if is_playlist {
+				let ytdl = Command::new("youtube-dl")
+					.args(&["-j", "--flat-playlist", "--ignore-config"])
+					.arg(url.as_str())
+					.output()
+					.await?;
+
+				let mut song_iter = Deserializer::from_slice(&ytdl.stdout)
+					.into_iter::<serde_json::Value>()
+					.filter_map(|video| video.ok())
+					.map(|video| {
+						let url = video
+							.get("url")
+							.expect("youtube-dl JSON has no 'url' field")
+							.as_str()
+							.expect("youtube-dl JSON has wrong 'url' field type")
+							.to_string();
+						Restartable::ytdl(url, true)
+					});
+
+				match song_iter.next() {
+					Some(song) => {
+						let result = create_player(song.await?.into());
+						yield result;
+
+						let songs = song_iter
+							.chunks(*QUEUE_CHUNK_SIZE)
+							.into_iter()
+							.map(|chunk| chunk.collect::<FuturesOrdered<_>>())
+							.collect::<Vec<_>>();
+
+						for mut song_chunk in songs {
+							while let Some(song) = song_chunk.next().await {
+								let result = create_player(song?.into());
+								yield result;
+							}
+						}
+					}
+					None => {}
 				}
+			} else {
+				let result =
+					create_player(Restartable::ytdl(url, true).await?.into());
+				yield result;
 			}
 		}
 	}
