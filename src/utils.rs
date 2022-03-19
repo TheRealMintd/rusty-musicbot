@@ -1,6 +1,4 @@
-use std::{
-	borrow::Cow, fmt::Display, future::Future, time::Duration,
-};
+use std::{borrow::Cow, fmt::Display, future::Future, time::Duration};
 
 use async_stream::{stream, try_stream};
 use futures_core::Stream;
@@ -98,6 +96,7 @@ impl PlayParameter {
 			.host_str()
 			.map(|host| KNOWN_PLAYLIST_HOSTS.contains(&host))
 			.unwrap_or(false)
+			&& url.path() == "/playlist"
 			&& url.query_pairs().any(|(key, _)| key == "list");
 
 		try_stream! {
