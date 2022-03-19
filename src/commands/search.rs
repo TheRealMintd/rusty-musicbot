@@ -6,7 +6,6 @@ use serde_json::Deserializer;
 use serenity::{
 	client::Context,
 	framework::standard::{macros::command, Args, CommandResult},
-	futures::future,
 	model::channel::{Message, ReactionType},
 	utils::MessageBuilder,
 };
@@ -106,12 +105,6 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 	for emoji in NUMBER_REACTS.iter().take(results_count).cloned() {
 		result_message.react(&ctx.http, emoji).await?;
 	}
-	let reacts = NUMBER_REACTS
-		.iter()
-		.take(results_count)
-		.cloned()
-		.map(|emoji| result_message.react(&ctx.http, emoji));
-	future::join_all(reacts).await;
 
 	// wait for the user to make a selection using a reaction
 	let reactions = result_message
