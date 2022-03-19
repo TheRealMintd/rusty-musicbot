@@ -7,6 +7,7 @@ use serenity::{
 #[command]
 #[only_in(guilds)]
 #[max_args(1)]
+#[aliases("remove")]
 /// Skips the currently playing song.
 async fn skip(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 	let manager = songbird::get(ctx)
