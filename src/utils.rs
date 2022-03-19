@@ -1,4 +1,6 @@
-use std::{borrow::Cow, fmt::Display, sync::Arc, time::Duration};
+use std::{
+	borrow::Cow, fmt::Display, future::Future, sync::Arc, time::Duration,
+};
 
 use async_stream::{stream, try_stream};
 use futures_core::Stream;
@@ -21,7 +23,8 @@ use songbird::{
 	tracks::{create_player, Track, TrackHandle},
 	Call, Event,
 };
-use tokio::process::Command;
+use tokio::{process::Command, sync::MutexGuard};
+use tracing::{error, info, warn};
 use url::Url;
 
 use crate::events::TrackEnd;
@@ -187,6 +190,72 @@ impl PlayParameter {
 	}
 }
 
+pub(crate) async fn queue_songs(
+	handler: &mut MutexGuard<'_, Call>,
+	song_stream: impl Stream<Item = SongbirdResult<(Track, TrackHandle)>>,
+) -> Result<String, &'static str> {
+	let ((mut message, added_songs, error), elapsed) =
+		time_section(|| async move {
+			tokio::pin!(song_stream);
+
+			let mut error = false;
+			let mut song_count = 0;
+			let mut message = MessageBuilder::new();
+
+			if let Some(song) = song_stream.next().await {
+				match song {
+					Ok((track, track_handle)) => {
+						handler.enqueue(track);
+						song_count += 1;
+						info!("Track <{}> queued", track_handle.get_title());
+						message.push(build_description(
+							track_handle.get_title(),
+							track_handle.metadata(),
+							handler.queue().len() - 1,
+						));
+					}
+					Err(e) => {
+						error!("Error occurred during video download: {}", e);
+						error = true;
+					}
+				}
+			}
+
+			while let Some(song) = song_stream.next().await {
+				match song {
+					Ok((track, track_handle)) => {
+						handler.enqueue(track);
+						song_count += 1;
+						info!("Track <{}> queued", track_handle.get_title());
+					}
+					Err(e) => {
+						error!("Error occurred during video download: {}", e);
+						error = true;
+					}
+				}
+			}
+
+			(message, song_count, error)
+		})
+		.await;
+
+	if added_songs == 0 {
+		Err("Error downloading songs")
+	} else {
+		message.push(format!(
+			"\n\nAdded {} song(s) in {}",
+			added_songs,
+			format_duration(elapsed)
+		));
+
+		if error {
+			message.push("\nSome songs may have been skipped due to errors");
+		}
+
+		Ok(message.build())
+	}
+}
+
 pub(crate) fn format_duration(duration: Duration) -> String {
 	let hours = duration.as_secs() / 60 / 60;
 	let minutes = duration.as_secs() / 60 % 60;
@@ -234,6 +303,41 @@ where
 
 	embed.push("\nAdded to queue at position ").push(position);
 	embed
+}
+
+pub(crate) async fn time_section<F, T, Fut>(func: F) -> (T, Duration)
+where
+	F: FnOnce() -> Fut,
+	Fut: Future<Output = T>,
+{
+	let timer = std::time::Instant::now();
+	let result = func().await;
+
+	(result, timer.elapsed())
+}
+
+pub(crate) async fn leave_if_empty(
+	ctx: &Context,
+	handler: MutexGuard<'_, Call>,
+	guild: GuildId,
+) {
+	if !handler.queue().is_empty() {
+		return;
+	}
+
+	drop(handler);
+	let manager = songbird::get(ctx)
+		.await
+		.expect("Cannot obtain Songbird voice client")
+		.clone();
+
+	while let Err(e) = manager.remove(guild).await {
+		warn!(
+			"Could not leave voice channel: {}, trying again in 5 seconds",
+			e
+		);
+		tokio::time::sleep(Duration::from_secs(5)).await;
+	}
 }
 
 #[cfg(test)]
