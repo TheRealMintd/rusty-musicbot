@@ -1,6 +1,5 @@
 use std::{borrow::Cow, convert::TryFrom, time::Duration};
 
-use futures_util::StreamExt;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde_json::Deserializer;
@@ -12,9 +11,9 @@ use serenity::{
 	utils::MessageBuilder,
 };
 use tokio::process::Command;
-use tracing::{error, info};
+use tracing::error;
 
-use crate::utils::*;
+use crate::{join_channel, utils::*};
 
 static NUMBER_REACTS: Lazy<[ReactionType; 4]> = Lazy::new(|| {
 	[
@@ -39,19 +38,7 @@ struct SearchResult<'a> {
 #[min_args(1)]
 /// Search for a video on YouTube
 async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
-	// user must be connected to a voice channel to issue playback commands
-	let (guild_id, channel_id) = match get_user_server_channel(ctx, msg).await {
-		Some(channel) => channel,
-		None => {
-			msg.reply(
-				&ctx.http,
-				"You must be in a voice channel to use this command.",
-			)
-			.await?;
-			return Ok(());
-		}
-	};
-
+	let handler_lock = join_channel!(ctx, msg);
 	let mut result_message = msg
 		.channel_id
 		.say(&ctx.http, "Please wait, searching...")
@@ -160,54 +147,29 @@ async fn search(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 		}
 	};
 
-	let start_time = std::time::Instant::now();
 	let song_stream = PlayParameter::Url(url.to_string()).get_tracks();
-	tokio::pin!(song_stream);
-	let (track_handle, position) = match song_stream
-		.next()
-		.await
-		.expect("Track URL returned nothing")
-	{
-		Ok((track, track_handle)) => {
-			let handler_lock =
-				match join_channel(ctx, guild_id, channel_id).await {
-					Ok(handler_lock) => handler_lock,
-					Err(e) => {
-						msg.channel_id
-							.say(&ctx.http, "Error joining the channel.")
-							.await?;
-						error!("Cannot join channel: {:?}", e);
-						return Ok(());
-					}
-				};
-			let mut handler = handler_lock.lock().await;
-			handler.enqueue(track);
-			(track_handle, handler.queue().len() - 1)
-		}
-		Err(e) => {
+	let mut handler = handler_lock.lock().await;
+	match queue_songs(&mut handler, song_stream).await {
+		Ok(message) => {
 			result_message
 				.edit(&ctx.http, |m| {
-					m.content("Error occurred during video download.")
+					m.content("");
+					m.embed(|m| m.description(message))
 				})
 				.await?;
-			error!("Failed to download video file: {:?}", e);
-			return Ok(());
 		}
-	};
-	let elapsed = start_time.elapsed();
-
-	let title = track_handle.get_title();
-	info!("Track <{}> queued in guild {}", title, guild_id);
-	result_message
-		.edit(&ctx.http, |m| {
-			m.content("").embed(|m| {
-				m.description(
-					build_description(title, track_handle.metadata(), position)
-						.push(format!(" in {:.2?}", elapsed)),
-				)
-			})
-		})
-		.await?;
+		Err(message) => {
+			result_message
+				.edit(&ctx.http, |m| m.content(message))
+				.await?;
+			leave_if_empty(
+				ctx,
+				handler,
+				msg.guild(&ctx.cache).await.unwrap().id,
+			)
+			.await;
+		}
+	}
 
 	Ok(())
 }
