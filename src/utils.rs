@@ -1,5 +1,5 @@
 use std::{
-	borrow::Cow, fmt::Display, future::Future, sync::Arc, time::Duration,
+	borrow::Cow, fmt::Display, future::Future, time::Duration,
 };
 
 use async_stream::{stream, try_stream};
@@ -18,16 +18,14 @@ use serenity::{
 	utils::{EmbedMessageBuilding, MessageBuilder},
 };
 use songbird::{
-	error::JoinError,
 	input::{error::Result as SongbirdResult, Metadata, Restartable},
 	tracks::{create_player, Track, TrackHandle},
-	Call, Event,
+	Call,
 };
 use tokio::{process::Command, sync::MutexGuard};
 use tracing::{error, info, warn};
 use url::Url;
 
-use crate::events::TrackEnd;
 use crate::QUEUE_CHUNK_SIZE;
 
 pub(crate) trait ObtainTitle {
@@ -56,44 +54,6 @@ pub(crate) async fn get_user_server_channel(
 			.get(&msg.author.id)
 			.and_then(|voice_state| voice_state.channel_id)?,
 	))
-}
-
-pub(crate) async fn join_channel(
-	ctx: &Context,
-	guild_id: GuildId,
-	channel_id: ChannelId,
-) -> Result<Arc<Mutex<Call>>, JoinError> {
-	let manager = songbird::get(ctx)
-		.await
-		.expect("Songbird Voice Client placed in at initialisation.")
-		.clone();
-
-	match manager.get(guild_id) {
-		Some(handler_lock) => Ok(handler_lock),
-		None => {
-			let (handler_lock, success) =
-				manager.join(guild_id, channel_id).await;
-
-			match success {
-				Ok(_) => {
-					let mut handler = handler_lock.lock().await;
-					handler.deafen(true).await?;
-					handler.add_global_event(
-						Event::Track(songbird::TrackEvent::End),
-						TrackEnd {
-							guild_id,
-							manager: manager.clone(),
-						},
-					)
-				}
-				Err(e) => {
-					return Err(e);
-				}
-			}
-
-			Ok(handler_lock)
-		}
-	}
 }
 
 pub(crate) enum PlayParameter {
