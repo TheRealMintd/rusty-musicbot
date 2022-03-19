@@ -166,7 +166,6 @@ pub(crate) async fn queue_songs(
 						message.push(build_description(
 							track_handle.get_title(),
 							track_handle.metadata(),
-							handler.queue().len() - 1,
 						));
 					}
 					Err(e) => {
@@ -232,7 +231,6 @@ pub(crate) fn escape_markdown(text: &str) -> Cow<str> {
 pub(crate) fn build_description<T>(
 	title: T,
 	metadata: &Metadata,
-	position: usize,
 ) -> MessageBuilder
 where
 	T: AsRef<str> + Display,
@@ -256,7 +254,6 @@ where
 		embed.push("Artist/Uploader: ").push_line_safe(uploader);
 	}
 
-	embed.push("\nAdded to queue at position ").push(position);
 	embed
 }
 
