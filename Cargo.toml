@@ -10,7 +10,7 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-stream = "0.3.2"
+async-stream = "0.3.3"
 dotenv = "0.15.0"
 futures-core = "0.3.18"
 futures-util = "0.3.18"

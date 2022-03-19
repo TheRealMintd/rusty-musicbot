@@ -123,8 +123,7 @@ impl PlayParameter {
 
 				match song_iter.next() {
 					Some(song) => {
-						let result = create_player(song.await?.into());
-						yield result;
+						yield create_player(song.await?.into());
 
 						let songs = song_iter
 							.chunks(*QUEUE_CHUNK_SIZE)
@@ -134,17 +133,14 @@ impl PlayParameter {
 
 						for mut song_chunk in songs {
 							while let Some(song) = song_chunk.next().await {
-								let result = create_player(song?.into());
-								yield result;
+								yield create_player(song?.into());
 							}
 						}
 					}
 					None => {}
 				}
 			} else {
-				let result =
-					create_player(Restartable::ytdl(url, true).await?.into());
-				yield result;
+				yield create_player(Restartable::ytdl(url, true).await?.into());
 			}
 		}
 	}
